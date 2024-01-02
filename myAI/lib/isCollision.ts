@@ -1,12 +1,9 @@
 import { Drone } from "./Drone";
 import { Fish } from "./Fish";
 
-export const DRONE_HIT_RANGE = 200;
-export const UGLY_EAT_RANGE = 300;
-
-export const isCollision = (drone: Drone, ugly: Fish): boolean => {
+export const isCollision = (drone: Drone, ugly: Fish, radius: number = 500): boolean => {
     // Check instant collision
-    if (ugly.pos.inRange(drone.pos, DRONE_HIT_RANGE + UGLY_EAT_RANGE)) {
+    if (ugly.pos.inRange(drone.pos, radius)) {
         return true;
     }
 
@@ -22,7 +19,7 @@ export const isCollision = (drone: Drone, ugly: Fish): boolean => {
     const uy = drone.pos.y;
     const x2 = x - ux;
     const y2 = y - uy;
-    const r2 = UGLY_EAT_RANGE + DRONE_HIT_RANGE;
+    const r2 = radius;
     const vx2 = ugly.speed.x - drone.speed.x;
     const vy2 = ugly.speed.y - drone.speed.y;
 
