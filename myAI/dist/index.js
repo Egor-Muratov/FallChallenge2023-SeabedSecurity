@@ -268,35 +268,6 @@ module.exports = require("fs");
 /******/ 	}
 /******/ 	
 /************************************************************************/
-/******/ 	/* webpack/runtime/compat get default export */
-/******/ 	(() => {
-/******/ 		// getDefaultExport function for compatibility with non-harmony modules
-/******/ 		__nccwpck_require__.n = (module) => {
-/******/ 			var getter = module && module.__esModule ?
-/******/ 				() => (module['default']) :
-/******/ 				() => (module);
-/******/ 			__nccwpck_require__.d(getter, { a: getter });
-/******/ 			return getter;
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/define property getters */
-/******/ 	(() => {
-/******/ 		// define getter functions for harmony exports
-/******/ 		__nccwpck_require__.d = (exports, definition) => {
-/******/ 			for(var key in definition) {
-/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 				}
-/******/ 			}
-/******/ 		};
-/******/ 	})();
-/******/ 	
-/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
-/******/ 	(() => {
-/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ 	})();
-/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -317,42 +288,14 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
 "use strict";
+// ESM COMPAT FLAG
 __nccwpck_require__.r(__webpack_exports__);
-/* harmony import */ var _lib_Vector__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(437);
-/* harmony import */ var _lib_readline_readline__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(655);
-/* harmony import */ var _lib_readline_readline__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_lib_readline_readline__WEBPACK_IMPORTED_MODULE_1__);
 
-
+// EXTERNAL MODULE: ./lib/Vector.js
+var Vector = __nccwpck_require__(437);
+;// CONCATENATED MODULE: ./lib/isCollision.ts
 const DRONE_HIT_RANGE = 200;
 const UGLY_EAT_RANGE = 300;
-//=========================================
-//              Types
-//=========================================
-const moveDown = (pos, light) => console.log('MOVE', pos.x, 9999, light);
-const moveUp = (pos, light) => console.log('MOVE', pos.x, 0, light);
-;
-const moveDelta = {
-    BL: _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([-1, 1]),
-    BR: _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([1, 1]),
-    TL: _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([-1, -1]),
-    TR: _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([1, -1]),
-};
-const DRONE_COUNT = 2;
-const droneLightById = new Map();
-let firstSink = true;
-let firstTurn = true;
-const readNumber = () => parseInt((0,_lib_readline_readline__WEBPACK_IMPORTED_MODULE_1__.readline)());
-const readNumbers = () => (0,_lib_readline_readline__WEBPACK_IMPORTED_MODULE_1__.readline)().split(' ').map(Number);
-let prevMyDrones = [];
-const getMonsterRect = (start, direction, speed, radius) => {
-    const height = direction.multiply(radius);
-    const A = start.add(height.rotateLeft());
-    const B = start.add(height.rotateRight());
-    const finish = start.add(height.multiply(speed));
-    const C = finish.add(height.rotateLeft());
-    const D = finish.add(height.rotateRight());
-    return [A, B, C, D];
-};
 const isCollision = (drone, ugly) => {
     // Check instant collision
     if (ugly.pos.inRange(drone.pos, DRONE_HIT_RANGE + UGLY_EAT_RANGE)) {
@@ -378,44 +321,92 @@ const isCollision = (drone, ugly) => {
     // b = 2*(x*vx + y*vy)
     // c = x^2 + y^2 - radius^2 
     const a = vx2 * vx2 + vy2 * vy2;
-    if (a <= 0.0) {
+    if (a <= 0) {
         return false;
     }
-    const b = 2.0 * (x2 * vx2 + y2 * vy2);
+    const b = 2 * (x2 * vx2 + y2 * vy2);
     const c = x2 * x2 + y2 * y2 - r2 * r2;
-    const delta = b * b - 4.0 * a * c;
-    if (delta < 0.0) {
+    const delta = b * b - 4 * a * c;
+    if (delta < 0) {
         return false;
     }
-    const t = (-b - Math.sqrt(delta)) / (2.0 * a);
-    if (t <= 0.0) {
+    const t = (-b - Math.sqrt(delta)) / (2 * a);
+    if (t <= 0) {
         return false;
     }
-    if (t > 1.0) {
+    if (t > 1) {
         return false;
     }
     return true;
 };
-const getBestWay = (drone, uglys) => {
+
+// EXTERNAL MODULE: ./lib/readline/readline.js
+var readline = __nccwpck_require__(655);
+;// CONCATENATED MODULE: ./lib/read.ts
+
+const readNumber = () => parseInt((0,readline.readline)());
+const readNumbers = () => (0,readline.readline)().split(' ').map(Number);
+
+;// CONCATENATED MODULE: ./lib/readDrones.ts
+
+
+function readDrones() {
+    const myDrones = [];
+    const myDroneCount = readNumber();
+    for (let i = 0; i < myDroneCount; i++) {
+        const [id, x, y, emergency, battery] = readNumbers();
+        const drone = {
+            id,
+            pos: Vector/* Vector.of */.O.of([x, y]),
+            battery,
+            emergency,
+            scans: [],
+            speed: Vector/* Vector.of */.O.of([0, 0]),
+            radarBlips: {}
+        };
+        myDrones.push(drone);
+    }
+    return myDrones;
+}
+
+;// CONCATENATED MODULE: ./new.ts
+
+
+
+
+
+//=========================================
+//              Types
+//=========================================
+const DRONE_COUNT = 2;
+let droneLightById = new Map();
+let firstSink = true;
+let firstTurn = true;
+let lastDroneState = [];
+const getMonsterRect = (start, direction, speed, radius) => {
+    const height = direction.multiply(radius);
+    const A = start.add(height.rotateLeft());
+    const B = start.add(height.rotateRight());
+    const finish = start.add(height.multiply(speed));
+    const C = finish.add(height.rotateLeft());
+    const D = finish.add(height.rotateRight());
+    return [A, B, C, D];
 };
-//=========================================
-//              State Machine
-//=========================================
-var MachineStates;
-(function (MachineStates) {
-    MachineStates["sink"] = "sink";
-    MachineStates["firstFullSink"] = "firstFullSink";
-    MachineStates["runAwayFromMonster"] = "runAwayFromMonster";
-    MachineStates["avoidMonsterAndSink"] = "avoidMonsterAndSink";
-    MachineStates["avoidMonsterAndSearch"] = "avoidMonsterAndSearch";
-    MachineStates["sendScans"] = "sendScans";
-    MachineStates["search"] = "search";
-})(MachineStates || (MachineStates = {}));
-var MachineActions;
-(function (MachineActions) {
-    MachineActions["foundMonster"] = "foundMonster";
-    MachineActions["monsterHunting"] = "monsterHunting";
-})(MachineActions || (MachineActions = {}));
+const bypassUglies = (drone, uglies) => {
+    console.error('bypassUglies', uglies);
+    if (!uglies || uglies.length == 0) {
+        return;
+    }
+    let angle = 0;
+    const droneBaseSpeed = Vector/* Vector.copy */.O.copy(drone.speed);
+    while (uglies.some((ugly) => isCollision(drone, ugly))) {
+        angle = angle >= 0
+            ? -angle + 5
+            : -angle;
+        drone.speed = droneBaseSpeed.rotateByDegrees(angle);
+        console.error('drone try rotate', drone.speed);
+    }
+};
 //=========================================
 //              Init
 //=========================================
@@ -434,46 +425,22 @@ while (true) {
     const foeScore = readNumber();
     //Исследованные рыбы 
     //-------------------------------------
-    const myScanCount = readNumber();
-    const myScaned = [];
-    for (let i = 0; i < myScanCount; i++) {
-        const researchedId = readNumber();
-        fishesById.get(researchedId).researched = true;
-        myScaned.push(researchedId);
-    }
-    const foeScanCount = readNumber();
-    const foeScaned = [];
-    for (let i = 0; i < foeScanCount; i++) {
-        foeScaned.push(readNumber());
-    }
+    const myResearched = Array(readNumber()).fill(0).map(() => readNumber());
+    const enemyResearched = Array(readNumber()).fill(0).map(() => readNumber());
     //Дроны
     //-------------------------------------
-    const myDrones = [];
-    const myDronesById = new Map();
-    const myDroneCount = readNumber();
-    for (let i = 0; i < myDroneCount; i++) {
-        const [id, x, y, emergency, battery] = readNumbers();
-        const drone = {
-            id,
-            pos: _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([x, y]),
-            battery,
-            emergency,
-            scans: [],
-            speed: _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([0, 0]),
-            radarBlips: {}
-        };
-        myDronesById.set(id, drone);
-        myDrones.push(drone);
-        if (firstTurn)
-            droneLightById.set(id, 0);
-    }
-    const foeDroneCount = readNumber();
-    for (let i = 0; i < foeDroneCount; i++) {
-        const [droneId, droneX, droneY, dead, battery] = readNumbers();
-    }
+    const myDrones = readDrones();
+    const myDronesById = new Map(myDrones.map(drone => [drone.id, drone]));
+    if (firstTurn)
+        droneLightById = new Map(myDrones.map(drone => [drone.id, 0]));
+    const enemyDrones = readDrones();
     //Сканирования
     //-------------------------------------
-    fishesById.forEach((value) => value.scanned = false);
+    fishesById.forEach((fish) => {
+        fish.scanned = false;
+        fish.pos = null;
+        fish.speed = null;
+    });
     const droneScanCount = readNumber();
     for (let i = 0; i < droneScanCount; i++) {
         const [droneId, creatureId] = readNumbers();
@@ -487,8 +454,8 @@ while (true) {
     for (let i = 0; i < visibleCreatureCount; i++) {
         const [creatureId, x, y, vx, vy] = readNumbers();
         const fish = fishesById.get(creatureId);
-        fish.pos = _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([x, y]);
-        fish.speed = _lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([vx, vy]);
+        fish.pos = Vector/* Vector.of */.O.of([x, y]);
+        fish.speed = Vector/* Vector.of */.O.of([vx, vy]);
     }
     //Радар
     //-------------------------------------
@@ -496,7 +463,7 @@ while (true) {
     fishesById.forEach((value) => value.lr = 0);
     const radarBlipCount = readNumber();
     for (let i = 0; i < radarBlipCount; i++) {
-        const inputs = (0,_lib_readline_readline__WEBPACK_IMPORTED_MODULE_1__.readline)().split(' ');
+        const inputs = (0,readline.readline)().split(' ');
         const droneId = parseInt(inputs[0]);
         const creatureId = parseInt(inputs[1]);
         const direction = inputs[2];
@@ -507,41 +474,48 @@ while (true) {
     }
     const Type0ToFind = Array
         .from(fishesById.values())
-        .filter(c => (c.type == 0 || c.type == 1) && c.bliped && !c.scanned && !c.researched);
-    console.error('Рыбы', Type0ToFind);
+        .filter(c => (c.type == 0 || c.type == 1 || c.type == 2) && c.bliped && !c.scanned && !c.researched);
+    const uglies = Array
+        .from(fishesById.values())
+        .filter(fish => (fish.type == -1) && fish.pos);
+    // console.error('Рыбы', Type0ToFind);
+    // console.error('myResearched', myResearched);
+    // console.error('enemyResearched', enemyResearched);        
+    console.error('uglies', uglies);
     for (const drone of myDrones) {
         if (Type0ToFind && Type0ToFind.length > 0) {
-            const prevDrone = prevMyDrones.find((value) => value.id == drone.id);
+            const droneLastState = lastDroneState.find((value) => value.id == drone.id);
             //выбор цели
             const targetFish = drone.pos.x < myDrones.find((value) => value.id != drone.id).pos.x
                 ? Type0ToFind.sort((a, b) => b.lr - a.lr).pop()
                 : Type0ToFind.sort((a, b) => a.lr - b.lr).pop();
             //движение по горизонтали
-            if (!prevDrone || prevDrone.radarBlips[targetFish.id][1] == drone.radarBlips[targetFish.id][1])
+            if (!droneLastState || droneLastState.radarBlips[targetFish.id][1] == drone.radarBlips[targetFish.id][1])
                 drone.speed = drone.radarBlips[targetFish.id][1] == 'L'
-                    ? drone.speed.add(_lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([-1, 0]))
-                    : drone.speed.add(_lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([1, 0]));
+                    ? drone.speed.add(Vector/* Vector.of */.O.of([-1, 0]))
+                    : drone.speed.add(Vector/* Vector.of */.O.of([1, 0]));
             //движение по вертикали
-            if (!prevDrone || prevDrone.radarBlips[targetFish.id][0] == drone.radarBlips[targetFish.id][0])
+            if (!droneLastState || droneLastState.radarBlips[targetFish.id][0] == drone.radarBlips[targetFish.id][0])
                 drone.speed = drone.radarBlips[targetFish.id][0] == 'T'
-                    ? drone.speed.add(_lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([0, -1]))
-                    : drone.speed.add(_lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([0, 1]));
+                    ? drone.speed.add(Vector/* Vector.of */.O.of([0, -1]))
+                    : drone.speed.add(Vector/* Vector.of */.O.of([0, 1]));
             console.error(`Drone ${drone.id} search ${targetFish.id} with ${drone.speed}`);
-            console.error(`Because ${prevDrone === null || prevDrone === void 0 ? void 0 : prevDrone.radarBlips[targetFish.id]} ?? ${drone.radarBlips[targetFish.id]}`);
+            console.error(`Because ${droneLastState === null || droneLastState === void 0 ? void 0 : droneLastState.radarBlips[targetFish.id]} ?? ${drone.radarBlips[targetFish.id]}`);
             const newLight = droneLightById.get(drone.id) == 0 && drone.pos.y > 2500 && drone.battery > 4 ? 1 : 0;
             droneLightById.set(drone.id, newLight);
         }
         else {
             console.error('bestDirection', 'UP');
-            drone.speed = drone.speed.add(_lib_Vector__WEBPACK_IMPORTED_MODULE_0__/* .Vector.of */ .O.of([0, -1]));
+            drone.speed = drone.speed.add(Vector/* Vector.of */.O.of([0, -1]));
         }
         drone.speed = drone.speed.normalize().multiply(601);
+        bypassUglies(drone, uglies);
         drone.pos = drone.pos.add(drone.speed);
         console.log('MOVE', drone.pos.toString(), droneLightById.get(drone.id));
         continue;
     }
     firstTurn = false;
-    prevMyDrones = JSON.parse(JSON.stringify(myDrones));
+    lastDroneState = JSON.parse(JSON.stringify(myDrones));
 }
 
 })();
