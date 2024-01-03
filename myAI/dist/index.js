@@ -361,6 +361,7 @@ function readDrones() {
 
 
 
+//TODO Если если по сумме непобедимый бежать на верх!
 //=========================================
 //              Types
 //=========================================
@@ -368,7 +369,16 @@ const DRONE_COUNT = 2;
 let droneLightById = new Map();
 let firstTurn = true;
 const droneFirstSink = new Map();
+const droneFirstUp = new Map();
 let lastDroneState = [];
+function uniqByReduce(array) {
+    return array.reduce((acc, cur) => {
+        if (!acc.includes(cur)) {
+            acc.push(cur);
+        }
+        return acc;
+    }, []);
+}
 const getMonsterRect = (start, direction, speed, radius) => {
     const height = direction.multiply(radius);
     const A = start.add(height.rotateLeft());
@@ -426,12 +436,15 @@ while (true) {
     if (firstTurn) {
         droneLightById = new Map(myDrones.map(drone => [drone.id, 0]));
         myDrones.forEach((drone) => droneFirstSink.set(drone.id, true));
+        myDrones.forEach((drone) => droneFirstUp.set(drone.id, false));
     }
     const enemyDrones = readDrones();
     //Сканирования
     //-------------------------------------
     fishesById.forEach((fish) => {
         fish.scanned = false;
+        fish.bliped = false;
+        fish.lr = 0;
         fish.pos = null;
         fish.speed = null;
         if (myResearched.includes(fish.id))
@@ -441,11 +454,13 @@ while (true) {
     const myScanned = [];
     for (let i = 0; i < droneScanCount; i++) {
         const [droneId, creatureId] = readNumbers();
-        if (myDronesById.has(droneId))
+        if (myDronesById.has(droneId)) {
             myDronesById.get(droneId).scans.push(creatureId);
-        fishesById.get(creatureId).scanned = true;
-        myScanned.push(creatureId);
+            fishesById.get(creatureId).scanned = true;
+            myScanned.push(creatureId);
+        }
     }
+    const myScannedUniq = uniqByReduce(myScanned);
     //Видимые рыбки
     //-------------------------------------
     const visibleCreatureCount = readNumber();
@@ -457,8 +472,6 @@ while (true) {
     }
     //Радар
     //-------------------------------------
-    fishesById.forEach((value) => value.bliped = false);
-    fishesById.forEach((value) => value.lr = 0);
     const radarBlipCount = readNumber();
     for (let i = 0; i < radarBlipCount; i++) {
         const inputs = (0,readline.readline)().split(' ');
@@ -470,7 +483,7 @@ while (true) {
         fish.bliped = true;
         fish.lr += direction[1] == 'L' ? -1 : 1;
     }
-    const Type0ToFind = Array
+    const fishToFind = Array
         .from(fishesById.values())
         .filter(fish => !fish.isMonster && fish.bliped && !fish.scanned && !fish.researched);
     const uglies = Array
@@ -478,44 +491,52 @@ while (true) {
         .filter(fish => fish.isMonster && fish.pos);
     // console.error('Рыбы', Type0ToFind);
     console.error('myResearched', myResearched);
-    console.error('myScanned', myScanned);
+    console.error('myScannedUniq', myScannedUniq);
     // console.error('enemyResearched', enemyResearched);        
     console.error('uglies', uglies.map((fish) => fish.id));
     for (const drone of myDrones) {
         if (drone.pos.y > 8000) {
             droneFirstSink.set(drone.id, false);
         }
-        if (Type0ToFind && Type0ToFind.length > 0) {
+        if (drone.pos.y < 500) {
+            droneFirstUp.set(drone.id, false);
+        }
+        if (myScannedUniq.length >= 10) {
+            droneFirstUp.set(drone.id, true);
+        }
+        if (droneFirstSink.get(drone.id)) {
+            console.error(`Drone ${drone.id} firstSink`);
+            drone.speed = Vector.of([0, 1]);
+        }
+        else if (droneFirstUp.get(drone.id)) {
+            console.error(`Drone ${drone.id} scoreUP`);
+            drone.speed = Vector.of([0, -1]);
+        }
+        else if (fishToFind && fishToFind.length > 0) {
             const droneLastState = lastDroneState.find((value) => value.id == drone.id);
-            if (droneFirstSink.get(drone.id)) {
-                drone.speed = Vector.of([0, 1]);
-                console.error(`Drone ${drone.id} firstSink`);
-            }
-            else {
-                //выбор цели
-                const targetFish = drone.pos.x < myDrones.find((value) => value.id != drone.id).pos.x
-                    ? Type0ToFind.sort((a, b) => b.lr - a.lr).pop()
-                    : Type0ToFind.sort((a, b) => a.lr - b.lr).pop();
-                //движение по горизонтали
-                if (!droneLastState || droneLastState.radarBlips[targetFish.id][1] == drone.radarBlips[targetFish.id][1])
-                    drone.speed = drone.radarBlips[targetFish.id][1] == 'L'
-                        ? drone.speed.add(Vector.of([-1, 0]))
-                        : drone.speed.add(Vector.of([1, 0]));
-                //движение по вертикали
-                if (!droneLastState || droneLastState.radarBlips[targetFish.id][0] == drone.radarBlips[targetFish.id][0])
-                    drone.speed = drone.radarBlips[targetFish.id][0] == 'T'
-                        ? drone.speed.add(Vector.of([0, -1]))
-                        : drone.speed.add(Vector.of([0, 1]));
-                console.error(`Drone ${drone.id} search ${targetFish.id} with ${drone.speed}`);
-                console.error(`Because ${droneLastState === null || droneLastState === void 0 ? void 0 : droneLastState.radarBlips[targetFish.id]} ?? ${drone.radarBlips[targetFish.id]}`);
-            }
-            const newLight = droneLightById.get(drone.id) == 0 && drone.pos.y > 2500 && drone.battery > 4 ? 1 : 0;
-            droneLightById.set(drone.id, newLight);
+            //выбор цели
+            const targetFish = drone.pos.x < myDrones.find((value) => value.id != drone.id).pos.x
+                ? fishToFind.sort((a, b) => b.lr - a.lr).pop()
+                : fishToFind.sort((a, b) => a.lr - b.lr).pop();
+            //движение по горизонтали
+            if (!droneLastState || droneLastState.radarBlips[targetFish.id][1] == drone.radarBlips[targetFish.id][1])
+                drone.speed = drone.radarBlips[targetFish.id][1] == 'L'
+                    ? drone.speed.add(Vector.of([-1, 0]))
+                    : drone.speed.add(Vector.of([1, 0]));
+            //движение по вертикали
+            if (!droneLastState || droneLastState.radarBlips[targetFish.id][0] == drone.radarBlips[targetFish.id][0])
+                drone.speed = drone.radarBlips[targetFish.id][0] == 'T'
+                    ? drone.speed.add(Vector.of([0, -1]))
+                    : drone.speed.add(Vector.of([0, 1]));
+            console.error(`Drone ${drone.id} search ${targetFish.id} with ${drone.speed}`);
+            console.error(`Because ${droneLastState === null || droneLastState === void 0 ? void 0 : droneLastState.radarBlips[targetFish.id]} ?? ${drone.radarBlips[targetFish.id]}`);
         }
         else {
-            console.error('bestDirection', 'UP');
-            drone.speed = drone.speed.add(Vector.of([0, -1]));
+            console.error(`Drone ${drone.id} GameEnd`);
+            drone.speed = Vector.of([0, -1]);
         }
+        const newLight = droneLightById.get(drone.id) == 0 && drone.pos.y > 2500 && drone.battery > 4 ? 1 : 0;
+        droneLightById.set(drone.id, newLight);
         drone.speed = drone.speed.normalize().multiply(600);
         bypassUglies(drone, uglies);
         drone.pos = drone.pos.add(drone.speed);
