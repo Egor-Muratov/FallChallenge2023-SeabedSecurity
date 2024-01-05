@@ -2,5 +2,7 @@
 source /etc/profile
 # tsc ts1.ts
 ncc build new.ts -o dist
-java -jar ../target/fall23.jar -d "seed=-3986935804292910000" -p1 "node ./dist/index.js" -p2 "python3 ../starterAIs/SS_Starter.py" -s 
+java -jar ../target/fall23.jar -d "seed=1546372922198954200" -p1 "node ./dist/index.js" -p2 "python3 ../starterAIs/SS_Starter.py" -s 
 # -d 1704210550933
+# -d -3986935804292910000
+# -d 1546372922198954200

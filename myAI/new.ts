@@ -41,6 +41,30 @@ const getMonsterRect = (start: Vector, direction: Vector, speed: number, radius:
     return [A, B, C, D];
 }
 
+const calcTypeScore = (fishes: Fish[], typeCode: number, typePoint: number): number => {
+    const typeCount = fishes.filter(fish => fish.type == typeCode && fish.scanned).length;
+    const typeScore = typeCount * typePoint + (typeCount == 4 ? 8 : 0);
+    return typeScore
+}
+
+const calcScore = (fishes: Fish[]): number => {
+
+    const type0Score = calcTypeScore(fishes, 0, 2);
+    const type1Score = calcTypeScore(fishes, 1, 4);
+    const type2Score = calcTypeScore(fishes, 2, 6);
+
+    const color0 = fishes.filter(fish => fish.color == 0 && fish.scanned).length == 3 ? 6 : 0;
+    const color1 = fishes.filter(fish => fish.color == 1 && fish.scanned).length == 3 ? 6 : 0;
+    const color2 = fishes.filter(fish => fish.color == 2 && fish.scanned).length == 3 ? 6 : 0;
+    const color3 = fishes.filter(fish => fish.color == 3 && fish.scanned).length == 3 ? 6 : 0;
+
+    const typeOne = Array
+        .from(fishesById.values())
+        .filter(fish => fish.type == 1 && fish.bliped && !fish.scanned && !fish.researched);
+
+    return type0Score + type1Score + type2Score + color0 + color1 + color2 + color3
+}
+
 const isOutborder = (drone: Drone): boolean => {
     const newPos = drone.pos.add(drone.speed);
     return newPos.x < 0 || newPos.x >= 10000 || newPos.y < 0 || newPos.y >= 10000
@@ -127,8 +151,10 @@ while (true) {
     //Видимые рыбки
     //-------------------------------------
     const visibleCreatureCount: number = readNumber();
+    const tmpVisFishes: number[] = [];
     for (let i = 0; i < visibleCreatureCount; i++) {
         const [creatureId, x, y, vx, vy] = readNumbers();
+        tmpVisFishes.push(creatureId);
         const fish = fishesById.get(creatureId);
         fish.pos = Vector.of([x, y]);
         fish.speed = Vector.of([vx, vy]);
@@ -156,12 +182,13 @@ while (true) {
         .from(fishesById.values())
         .filter(fish => fish.isMonster && fish.pos);
 
-
     // console.error('Рыбы', Type0ToFind);
-    console.error('myResearched', myResearched);
-    console.error('myScannedUniq', myScannedUniq);
+    console.error('tmpVisFishes', tmpVisFishes);
+    // console.error('myResearched', myResearched);
+    // console.error('myScannedUniq', myScannedUniq);
     // console.error('enemyResearched', enemyResearched);        
-    console.error('uglies', uglies.map((fish) => fish.id));
+    // console.error('uglies', uglies.map((fish) => fish.id));
+    console.error('calcScore', calcScore(Array.from(fishesById.values())));
 
     for (const drone of myDrones) {
         if (drone.pos.y > 8000) {
